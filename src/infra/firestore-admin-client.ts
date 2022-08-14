@@ -1,5 +1,5 @@
 import '../utils/firebase';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 export class FireStoreAdminClient {
   private readonly db: FirebaseFirestore.Firestore;
@@ -16,18 +16,24 @@ export class FireStoreAdminClient {
         id: '1',
         title: '課題1',
         description: '課題1の詳細',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       const questionData2 = {
         id: '2',
         title: '課題2',
         description: '課題2の詳細',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       const questionData3 = {
         id: '3',
         title: '課題3',
         description: '課題3の詳細',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       const userData1 = {
@@ -39,6 +45,8 @@ export class FireStoreAdminClient {
           { id: '2', status: '未完了' },
           { id: '3', status: '完了' },
         ],
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       const userData2 = {
@@ -49,6 +57,8 @@ export class FireStoreAdminClient {
           { id: '2', status: '未完了' },
           { id: '3', status: '完了' },
         ],
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       const userData3 = {
@@ -59,6 +69,8 @@ export class FireStoreAdminClient {
           { id: '2', status: '未完了' },
           { id: '3', status: '完了' },
         ],
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       };
 
       const questionCollection = this.db.collection('questions');
