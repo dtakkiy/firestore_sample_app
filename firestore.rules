@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAnyAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUserAuthenticated(userID) {
+      return isAnyAuthenticated() && userID == request.auth.uid;
+    }
+
+    match /users/{userID} {
+      allow create: if isUserAuthenticated(userID)
+        && (!('name' in request.resouce.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 32))
+        && (!('id' in request.resouce.data) || (request.resource.data.id is string && request.resource.data.id.size() <= 64))
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+
+      allow update: if isUserAuthenticated(userID)
+        && (!('name' in request.resouce.data) || (request.resource.data.name is string && request.resource.data.name.size() <= 32))
+        && (!('id' in request.resouce.data) || (request.resource.data.id is string && request.resource.data.id.size() <= 64))
+        && request.resource.data.updatedAt == request.time;
+
+      allow get: if isUserAuthenticated(userID);
+
+      // match /questions/{questionID} {
+      //   allow create: if isUserAuthenticated(questionID)
+      // }
+    }
+
+    // match /questions/{questionID} {
+    //   allow create: if isAnyAuthenticated();
+    //     && (!('title' in request.resouce.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 32))
+    //     && (!('description' in request.resouce.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 255))
+    //     && (!('id' in request.resouce.data) || (request.resource.data.id is string && request.resource.data.id.size() <= 64))
+    //     && request.resource.data.createdAt == request.time
+    //     && request.resource.data.updatedAt == request.time;
+    // }
+  }
+}

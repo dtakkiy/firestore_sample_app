@@ -1,6 +1,6 @@
 import '../utils/firebase';
 import { Question, User } from '../types/data';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 interface IFireStoreProvider {
   updateQuestionStatusToCompleteByUserID(userID: string): Promise<void>;
@@ -40,7 +40,10 @@ export class FireStoreClient implements IFireStoreProvider {
         return q;
       });
 
-      batch.update(doc.ref, { questions: updateData });
+      batch.update(doc.ref, {
+        questions: updateData,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
     });
 
     batch.commit();
@@ -110,6 +113,7 @@ export class FireStoreClient implements IFireStoreProvider {
       batch.update(ref, {
         title: title,
         description: description,
+        updatedAt: FieldValue.serverTimestamp(),
       });
     });
 
