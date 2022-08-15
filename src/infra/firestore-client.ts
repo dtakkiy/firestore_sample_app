@@ -109,8 +109,7 @@ export class FireStoreClient implements IFireStoreProvider {
     const batch = this.db.batch();
 
     questionSnapshot.forEach(async (doc) => {
-      const ref = doc.ref;
-      batch.update(ref, {
+      batch.update(doc.ref, {
         title: title,
         description: description,
         updatedAt: FieldValue.serverTimestamp(),
@@ -123,33 +122,28 @@ export class FireStoreClient implements IFireStoreProvider {
   public deleteQuestionByQuestionID = async (id: string) => {
     const batch = this.db.batch();
 
-    const questionsSnapshot = await this.db
-      .collection('questions')
-      .where('id', '==', id)
-      .get();
+    try {
+      const questionsSnapshot = await this.db
+        .collection('questions')
+        .where('id', '==', id)
+        .get();
 
-    if (questionsSnapshot.empty) return;
+      if (questionsSnapshot.empty) return;
 
-    questionsSnapshot.forEach((doc) => {
-      const ref = doc.ref;
-      batch.delete(ref);
-    });
-
-    const userSnapshot = await this.db.collection('users').get();
-    userSnapshot.forEach((doc) => {
-      const ref = doc.ref;
-      const data = doc.data();
-
-      let updateData: any = [];
-      data.questions.forEach((d: any) => {
-        if (d.id !== id) {
-          updateData.push(d);
-        }
+      questionsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
       });
 
-      batch.update(ref, { questions: updateData });
-    });
+      const userSnapshot = await this.db.collection('users').get();
+      userSnapshot.forEach((doc) => {
+        const data = doc.data();
+        const updateQuestions = data.questions.filter((q: any) => q.id !== id);
+        batch.update(doc.ref, { questions: updateQuestions });
+      });
 
-    await batch.commit();
+      await batch.commit();
+    } catch (e) {
+      console.log(e);
+    }
   };
 }
