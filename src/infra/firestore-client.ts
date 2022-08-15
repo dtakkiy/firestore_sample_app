@@ -145,6 +145,3 @@ export class FireStoreClient implements IFireStoreProvider {
     }
   };
 }
-
-const client = new FireStoreClient();
-client.getQuestionsStatusListByUserID('1');
