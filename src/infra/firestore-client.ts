@@ -49,46 +49,44 @@ export class FireStoreClient implements IFireStoreProvider {
     batch.commit();
   };
 
+  private readIDs = async (collection: any, ids: any[]) => {
+    const reads = ids.map((id) => collection.doc(id).get());
+    const result = await Promise.all(reads);
+    return result.map((v) => v.data());
+  };
+
   public getQuestionsStatusListByUserID = async (
     userID: string
   ): Promise<User> => {
     let response: User = { name: '', id: '', questions: [] };
 
-    const snapshot = await this.db
+    const usersSnapshot = await this.db
       .collection('users')
       .where('id', '==', userID)
       .get();
 
-    if (snapshot.empty) return response;
+    if (usersSnapshot.empty) return response;
 
-    // 課題を全件取得
-    let questionsData: Question[] = [];
-    const questionSnapshot = await this.db.collection('questions').get();
-    await questionSnapshot.forEach(async (doc) => {
-      const data = await doc.data();
-      questionsData.push({
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        status: '',
-      });
-    });
+    const users = usersSnapshot.docs.map((doc) => doc.data());
+    if (users.length < 1) return response;
 
-    await snapshot.forEach(async (doc) => {
-      const data = await doc.data();
-      response = data as User;
-      response.questions.forEach((q) => {
-        const hit: any = questionsData.filter((d) => {
-          return d.id === q.id;
-        });
+    const questionIds = users[0].questions.map((q: any) => q.id);
+    const questionsData = await this.readIDs(
+      this.db.collection('questions'),
+      questionIds
+    );
 
-        if (hit) {
-          q.description = hit[0].description;
-          q.title = hit[0].title;
-          q.id = q.id;
-          q.status = q.status;
-        }
-      });
+    response = users[0] as User;
+    response.questions = users[0].questions.map((q: any) => {
+      const target = questionsData.find((v) => v.id === q.id);
+      if (target) {
+        return {
+          id: q.id,
+          title: target.title,
+          description: target.description,
+          status: q.status,
+        };
+      }
     });
 
     return response;
@@ -147,3 +145,6 @@ export class FireStoreClient implements IFireStoreProvider {
     }
   };
 }
+
+const client = new FireStoreClient();
+client.getQuestionsStatusListByUserID('1');
