@@ -1,5 +1,5 @@
 import '../utils/firebase';
-import { Question, User } from '../types/data';
+import { Question, QuestionStatus, User } from '../types/data';
 import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 interface IFireStoreProvider {
@@ -33,7 +33,7 @@ export class FireStoreClient implements IFireStoreProvider {
 
     usersSnapshot.docs.map(async (doc) => {
       const data = doc.get('questions');
-      const updateData = data.map((q: Question) => {
+      const updateData = data.map((q: QuestionStatus) => {
         if (q.status === '未完了') {
           q.status = '完了';
         }
@@ -79,14 +79,14 @@ export class FireStoreClient implements IFireStoreProvider {
     const users = usersSnapshot.docs.map((doc) => doc.data());
     if (users.length < 1) return response;
 
-    const questionIds = users[0].questions.map((q: Question) => q.id);
+    const questionIds = users[0].questions.map((q: QuestionStatus) => q.id);
     const questionsData = await this.readIDs(
       this.db.collection('questions'),
       questionIds
     );
 
     response = users[0] as User;
-    response.questions = users[0].questions.map((q: Question) => {
+    response.questions = users[0].questions.map((q: QuestionStatus) => {
       const target = questionsData.find((v: any) => v.id === q.id);
       if (target) {
         return {

@@ -1,5 +1,7 @@
 import { Timestamp } from 'firebase-admin/firestore';
 
+export type TypeQuestionStatus = '完了' | '未完了' | 'レビュー待ち';
+
 export type Question = {
   id: string;
   title: string;
@@ -9,10 +11,15 @@ export type Question = {
   updatedAt: Timestamp;
 };
 
+export type QuestionStatus = {
+  id: string;
+  status: TypeQuestionStatus;
+};
+
 export type User = {
   id: string;
   name: string;
-  questions: Question[];
+  questions: QuestionStatus[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
