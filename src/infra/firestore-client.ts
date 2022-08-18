@@ -1,6 +1,6 @@
 import '../utils/firebase';
 import { Question, User } from '../types/data';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 interface IFireStoreProvider {
   updateQuestionStatusToCompleteByUserID(userID: string): Promise<void>;
@@ -31,7 +31,7 @@ export class FireStoreClient implements IFireStoreProvider {
 
     const batch = this.db.batch();
 
-    usersSnapshot.forEach(async (doc) => {
+    usersSnapshot.docs.map(async (doc) => {
       const data = doc.get('questions');
       const updateData = data.map((q: Question) => {
         if (q.status === '未完了') {
@@ -49,7 +49,10 @@ export class FireStoreClient implements IFireStoreProvider {
     batch.commit();
   };
 
-  private readIDs = async (collection: any, ids: any[]) => {
+  private readIDs = async (
+    collection: FirebaseFirestore.CollectionReference<FirebaseFirestore.DocumentData>,
+    ids: string[]
+  ) => {
     const reads = ids.map((id) => collection.doc(id).get());
     const result = await Promise.all(reads);
     return result.map((v) => v.data());
@@ -58,7 +61,13 @@ export class FireStoreClient implements IFireStoreProvider {
   public getQuestionsStatusListByUserID = async (
     userID: string
   ): Promise<User> => {
-    let response: User = { name: '', id: '', questions: [] };
+    let response: User = {
+      name: '',
+      id: '',
+      questions: [],
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
 
     const usersSnapshot = await this.db
       .collection('users')
@@ -70,15 +79,15 @@ export class FireStoreClient implements IFireStoreProvider {
     const users = usersSnapshot.docs.map((doc) => doc.data());
     if (users.length < 1) return response;
 
-    const questionIds = users[0].questions.map((q: any) => q.id);
+    const questionIds = users[0].questions.map((q: Question) => q.id);
     const questionsData = await this.readIDs(
       this.db.collection('questions'),
       questionIds
     );
 
     response = users[0] as User;
-    response.questions = users[0].questions.map((q: any) => {
-      const target = questionsData.find((v) => v.id === q.id);
+    response.questions = users[0].questions.map((q: Question) => {
+      const target = questionsData.find((v: any) => v.id === q.id);
       if (target) {
         return {
           id: q.id,
@@ -94,8 +103,8 @@ export class FireStoreClient implements IFireStoreProvider {
 
   public updateQuestionByQuestionID = async (
     id: string,
-    title: string,
-    description: string
+    title?: string,
+    description?: string
   ) => {
     const questionSnapshot = await this.db
       .collection('questions')
@@ -106,12 +115,14 @@ export class FireStoreClient implements IFireStoreProvider {
 
     const batch = this.db.batch();
 
-    questionSnapshot.forEach(async (doc) => {
-      batch.update(doc.ref, {
-        title: title,
-        description: description,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+    const data = {
+      title: title,
+      description: description,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    questionSnapshot.docs.map(async (doc) => {
+      batch.update(doc.ref, data);
     });
 
     await batch.commit();
@@ -128,14 +139,16 @@ export class FireStoreClient implements IFireStoreProvider {
 
       if (questionsSnapshot.empty) return;
 
-      questionsSnapshot.forEach((doc) => {
+      questionsSnapshot.docs.map((doc) => {
         batch.delete(doc.ref);
       });
 
       const userSnapshot = await this.db.collection('users').get();
-      userSnapshot.forEach((doc) => {
+      userSnapshot.docs.map((doc) => {
         const data = doc.data();
-        const updateQuestions = data.questions.filter((q: any) => q.id !== id);
+        const updateQuestions = data.questions.filter(
+          (q: Question) => q.id !== id
+        );
         batch.update(doc.ref, { questions: updateQuestions });
       });
 
