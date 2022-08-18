@@ -4,7 +4,7 @@ import { FieldValue, getFirestore, Timestamp } from 'firebase-admin/firestore';
 
 interface IFireStoreProvider {
   updateQuestionStatusToCompleteByUserID(userID: string): Promise<void>;
-  getQuestionsStatusListByUserID(userID: string): Promise<User>;
+  getQuestionsStatusListByUserID(userID: string): Promise<ResponseType>;
   updateQuestionByQuestionID(
     id: string,
     title: string,
@@ -12,6 +12,19 @@ interface IFireStoreProvider {
   ): Promise<void>;
   deleteQuestionByQuestionID(id: string): Promise<void>;
 }
+
+type ResponseType = {
+  uid: string;
+  name: string;
+  questions: {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+  }[];
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
 
 export class FireStoreClient implements IFireStoreProvider {
   private readonly db: FirebaseFirestore.Firestore;
@@ -23,7 +36,7 @@ export class FireStoreClient implements IFireStoreProvider {
   public updateQuestionStatusToCompleteByUserID = async (userID: string) => {
     const usersSnapshot = await this.db
       .collection('users')
-      .where('id', '==', userID)
+      .where('uid', '==', userID)
       .select('questions')
       .get();
 
@@ -60,42 +73,43 @@ export class FireStoreClient implements IFireStoreProvider {
 
   public getQuestionsStatusListByUserID = async (
     userID: string
-  ): Promise<User> => {
-    let response: User = {
+  ): Promise<ResponseType> => {
+    let response: ResponseType = {
       name: '',
-      id: '',
-      questions: [],
+      uid: '',
+      questions: [
+        {
+          id: '',
+          title: '',
+          description: '',
+          status: '',
+        },
+      ],
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
 
     const usersSnapshot = await this.db
       .collection('users')
-      .where('id', '==', userID)
+      .where('uid', '==', userID)
       .get();
 
     if (usersSnapshot.empty) return response;
 
-    const users = usersSnapshot.docs.map((doc) => doc.data());
-    if (users.length < 1) return response;
-
-    const questionIds = users[0].questions.map((q: QuestionStatus) => q.id);
-    const questionsData = await this.readIDs(
-      this.db.collection('questions'),
-      questionIds
-    );
-
-    response = users[0] as User;
-    response.questions = users[0].questions.map((q: QuestionStatus) => {
-      const target = questionsData.find((v: any) => v.id === q.id);
-      if (target) {
-        return {
-          id: q.id,
-          title: target.title,
-          description: target.description,
-          status: q.status,
-        };
-      }
+    await usersSnapshot.docs.map(async (doc) => {
+      const data = await doc.data();
+      response = data as ResponseType;
+      response.questions = data.questions.map(async (q: QuestionStatus) => {
+        const target = await (await q.questionRef.get()).data();
+        if (target) {
+          return {
+            id: q.id,
+            title: target.title,
+            description: target.description,
+            status: q.status,
+          };
+        }
+      });
     });
 
     return response;

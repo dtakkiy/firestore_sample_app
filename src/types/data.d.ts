@@ -1,4 +1,4 @@
-import { Timestamp } from 'firebase-admin/firestore';
+import { DocumentReference, Timestamp } from 'firebase-admin/firestore';
 
 export type TypeQuestionStatus = '完了' | '未完了' | 'レビュー待ち';
 
@@ -14,10 +14,11 @@ export type Question = {
 export type QuestionStatus = {
   id: string;
   status: TypeQuestionStatus;
+  questionRef: DocumentReference<FirebaseFirestore.DocumentData>;
 };
 
 export type User = {
-  id: string;
+  uid: string;
   name: string;
   questions: QuestionStatus[];
   createdAt: Timestamp;
