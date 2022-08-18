@@ -77,7 +77,7 @@ export class FireStoreAdminClient {
       const questionSnapShot = await questionCollection.get();
 
       if (!questionSnapShot.empty) {
-        questionSnapShot.forEach((doc) => {
+        questionSnapShot.docs.map((doc) => {
           batch.delete(doc.ref);
         });
       }
@@ -90,7 +90,7 @@ export class FireStoreAdminClient {
       const usersSnapshot = await userCollection.get();
 
       if (!usersSnapshot.empty) {
-        usersSnapshot.forEach((doc) => {
+        usersSnapshot.docs.map((doc) => {
           batch.delete(doc.ref);
         });
       }
@@ -101,7 +101,7 @@ export class FireStoreAdminClient {
 
       await batch.commit();
     } catch (e: any) {
-      throw new Error(`Failed addSeedData ${e}`);
+      throw new Error(`Failed add SeedData ${e}`);
     }
   };
 }
